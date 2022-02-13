@@ -12,7 +12,6 @@ import subprocess
 
 update_id = ''
 
-
 def extractfiles(zipname, katname):
     katalog = os.getcwd() + '\\' + katname + '\\'
     system = subprocess.Popen([r"C:\Program Files\7-Zip\7z.exe", 'x', katalog + zipname, '-y', '-o' + katalog])
@@ -22,12 +21,10 @@ def extractfiles(zipname, katname):
     print("code return: ", aa)
     return (system.communicate())
 
-
 def returndata(milliseconds, format_date='%d.%m'):
     # Добавил 3 часа (московское время)
     tek_date = datetime.datetime(1970, 1, 1) + datetime.timedelta(milliseconds=milliseconds + (3 * 60 * 60 * 1000))
     return tek_date.strftime(format_date)
-
 
 def savefile(stroka, dir_name, file_name):
     file_uid = stroka[stroka.rfind("=") + 1:]
@@ -56,9 +53,6 @@ def savefile(stroka, dir_name, file_name):
         else:
             ii += 1
 
-
-# print(ii)
-
 def otvetit(chat_id, text):
     otvet = requests.get(
         r'https://api.telegram.org/bot' + token + r'/sendMessage',
@@ -66,7 +60,6 @@ def otvetit(chat_id, text):
     )
     if otvet.status_code == 200:
         print('Success!')
-
 
 def save_doc(regNumber):
     popitki = 1
@@ -143,7 +136,7 @@ def save_doc(regNumber):
                                                                                'procedurePurchaseBlock'][
                                                                                'auctionEtpDate'],
                                                                            format_date='%d.%m.%Y %H:%M') + "\n"
-                    for i in data_info['data']['dto']['customerRequirementsBlock']:  # требования клиента
+                    for i in data_info['data']['dto']['customerRequirementsBlock']:  # укажем требования клиента
                         text_info += "Сроки поставки товара или завершения работы: " + i['conditionsOfContract'][
                             'deliveryTime'] + "\n"
                         for ii in i['conditionsOfContract']['deliveryPlace']:
@@ -171,6 +164,7 @@ def save_doc(regNumber):
 def main():
     global update_id
     exit_bot = False
+    chat_id = ''
     while True:
         try:
             response = requests.get(
