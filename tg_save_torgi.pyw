@@ -18,7 +18,7 @@ def extractfiles(zipname, katname):
     aa = system.wait()
     if aa == 0:
         os.remove(katalog + zipname)
-    print("code return: ", aa)
+    # print("code return: ", aa)
     return (system.communicate())
 
 def returndata(milliseconds, format_date='%d.%m'):
@@ -29,6 +29,10 @@ def returndata(milliseconds, format_date='%d.%m'):
 def savefile(stroka, dir_name, file_name):
     file_uid = stroka[stroka.rfind("=") + 1:]
     ii = 1
+    max_len_file_name = 60
+    if len(file_name) > max_len_file_name:
+        rashirenie_name = os.path.splitext(file_name)
+        file_name = file_name[:(max_len_file_name-2)] + rashirenie_name[1]
     # print(file_uid)
     # print(file_name)
     while ii < 10:
@@ -59,69 +63,86 @@ def otvetit(chat_id, text):
         params={'chat_id': chat_id, 'text': text},
     )
     if otvet.status_code == 200:
-        print('Success!')
+        pass
+        #print('Success!')
 
 def save_doc(regNumber):
     popitki = 1
-    while popitki < 20:
-        response = requests.get(
-            r'https://zakupki.gov.ru/api/mobile/proxy/917/epz/order/notice/ea44/view/documents.html',
-            params={'regNumber': regNumber},
-            headers={r'user-agent': 'my-app/0.0.1'},
-        )
-        if response.status_code == 200:
-            print('Success!')
-            data = response.json()
+    text_info = ''
+    while True:
+        try:
+            response = requests.get(
+                r'https://zakupki.gov.ru/api/mobile/proxy/917/epz/order/notice/ea44/view/documents.html',
+                params={'regNumber': regNumber},
+                headers={r'user-agent': 'my-app/0.0.1'},
+            )
+            if response.status_code == 200:
+                # print('Success!')
+                data = response.json()
 
-            if data['data'] is None:
-                return False
-            nmck = data['data']['dto']['headerBlock']['nmck']
-            # print('НМЦК ', nmck)
-            # print(data['data']['dto']['headerBlock']['purchaseObjectName'])
-            # print('Дата создания: ' ,returndata(data['data']['dto']['headerBlock']['createdDate']))
-            # print('Дата изменения: ' ,returndata(data['data']['dto']['headerBlock']['changedDate']))
-            expirationDate = returndata(data['data']['dto']['headerBlock']['expirationDate'])
-            # print('Дата подачи заявки: ' ,expirationDate)
-            # print('Дата публикации ' ,returndata(data['data']['dto']['headerBlock']['publishedDate']))
-            # print('------')
-            dir_name = str(int(nmck / 1000)) + 'тр. ' + "до " + expirationDate
-            text_info = "Номер закупки: " + data['data']['dto']['headerBlock']['purchaseNumber'] + "\n"
-            text_info += "Объект закупки: " + data['data']['dto']['headerBlock']['purchaseObjectName'] + "\n"
-            text_info += "Начальная цена: " + str(nmck) + "\n"
-            text_info += "Окончание подачи заявок: " + expirationDate + "\n"
-            text_info += "Заказчик: " + data['data']['dto']['headerBlock']['organizationPublishName'] + "\n"
-            if not os.path.isdir(dir_name):
-                # print('create dir')
-                os.mkdir(dir_name)
-            if not data['data']['dto']['explainsDocs'] is None:
-                for i in data['data']['dto']['explainsDocs']:  # разяснения
-                    for ii in i['attachments']:
-                        if ii['statusAttach'] == "P":
-                            # print(ii['fileName'])
-                            # print(ii['linkDownload'])
-                            # print('------')
-                            savefile(ii['linkDownload'], dir_name, ii['fileName'])
+                if data['data'] is None:
+                    return False
+                nmck = data['data']['dto']['headerBlock']['nmck']
+                # print('НМЦК ', nmck)
+                # print(data['data']['dto']['headerBlock']['purchaseObjectName'])
+                # print('Дата создания: ' ,returndata(data['data']['dto']['headerBlock']['createdDate']))
+                # print('Дата изменения: ' ,returndata(data['data']['dto']['headerBlock']['changedDate']))
+                expirationDate = returndata(data['data']['dto']['headerBlock']['expirationDate'])
+                # print('Дата подачи заявки: ' ,expirationDate)
+                # print('Дата публикации ' ,returndata(data['data']['dto']['headerBlock']['publishedDate']))
+                # print('------')
+                if data['data']['dto']['headerBlock']['changedDate'] == data['data']['dto']['headerBlock']['createdDate']:
+                    change = ''
+                else:
+                    change = 'обн. '
+                dir_name = str(int(nmck / 1000)) + 'тр. ' + change + "до " + expirationDate
+                text_info = "Номер закупки: " + data['data']['dto']['headerBlock']['purchaseNumber'] + "\n"
+                text_info += "Объект закупки: " + data['data']['dto']['headerBlock']['purchaseObjectName'] + "\n"
+                text_info += "Начальная цена: " + str(nmck) + "\n"
+                text_info += "Окончание подачи заявок: " + expirationDate + "\n"
+                text_info += "Заказчик: " + data['data']['dto']['headerBlock']['organizationPublishName'] + "\n"
+                if not os.path.isdir(dir_name):
+                    # print('create dir')
+                    os.mkdir(dir_name)
+                if not data['data']['dto']['explainsDocs'] is None:
+                    for i in data['data']['dto']['explainsDocs']:  # разяснения
+                        for ii in i['attachments']:
+                            if ii['statusAttach'] == "P":
+                                # print(ii['fileName'])
+                                # print(ii['linkDownload'])
+                                # print('------')
+                                savefile(ii['linkDownload'], dir_name, ii['fileName'])
 
-            if not data['data']['dto']['notificationChangesNotification'] is None:
-                for i in data['data']['dto']['notificationChangesNotification']:  # Извешение
-                    for ii in i['attachments']:
-                        if ii['statusAttach'] == "P":
-                            # print(ii['fileName'])
-                            # print(ii['linkDownload'])
-                            # print('------')
-                            savefile(ii['linkDownload'], dir_name, ii['fileName'])
+                if not data['data']['dto']['notificationChangesNotification'] is None:
+                    for i in data['data']['dto']['notificationChangesNotification']:  # Извешение
+                        for ii in i['attachments']:
+                            if ii['statusAttach'] == "P":
+                                # print(ii['fileName'])
+                                # print(ii['linkDownload'])
+                                # print('------')
+                                savefile(ii['linkDownload'], dir_name, ii['fileName'])
 
-            if not data['data']['dto']['structuredDocumentation'] is None:
-                for i in data['data']['dto']['structuredDocumentation']:  # Документация
-                    for ii in i['attachments']:
-                        if ii['statusAttach'] == "P":
-                            # print(ii['fileName'])
-                            # print(ii['linkDownload'])
-                            # print('------')
-                            savefile(ii['linkDownload'], dir_name, ii['fileName'])
-            # Выполним второй запрос для общей информации по закупке
-            popitki_info = 1
-            while popitki_info < 20:
+                if not data['data']['dto']['structuredDocumentation'] is None:
+                    for i in data['data']['dto']['structuredDocumentation']:  # Документация
+                        for ii in i['attachments']:
+                            if ii['statusAttach'] == "P":
+                                # print(ii['fileName'])
+                                # print(ii['linkDownload'])
+                                # print('------')
+                                savefile(ii['linkDownload'], dir_name, ii['fileName'])
+            else:
+                popitki += 1
+                time.sleep(1)
+                continue
+        except Exception as ex:
+            popitki += 1
+            # print(ex)
+            continue
+        # Выполним второй запрос для общей информации по закупке
+        if popitki > 20:
+            return False
+        while True:
+            try:
                 response_info = requests.get(
                     r'https://zakupki.gov.ru/api/mobile/proxy/917/epz/order/notice/ea44/view/common-info.html',
                     params={'regNumber': regNumber},
@@ -150,16 +171,16 @@ def save_doc(regNumber):
                     with open(dir_name + "\\" + "Информация.txt", "w",
                               encoding='utf-8') as file:  # открываем файл для записи, в режиме w
                         file.write(text_info)  # записываем содержимое в файл;
-                    return True
+                    # print('Количество попыток: ',popitki)
+                    return str(nmck)
                 else:
-                    popitki_info += 1
+                    popitki += 1
                     time.sleep(1)
-            return False
-        else:
-            popitki += 1
-            time.sleep(1)
-    return False
-
+            except Exception as ex:
+                popitki += 1
+                # print(ex)
+            if popitki > 40:
+                return False
 
 def main():
     global update_id
@@ -173,7 +194,7 @@ def main():
                 # headers={r'user-agent': 'my-app/0.0.1'},
             )
             if response.status_code == 200:
-                print('Success!')
+                # print('Success!')
                 data = response.json()
                 # data = response.text # для отладки на сайт json-парсера
                 # print(data)
@@ -185,13 +206,13 @@ def main():
                         pass
                     for i in data['result']:
                         if i.get('message') is None:
-                            print('err format message')
+                            # print('err format message')
                             continue
                         update_id = str(i['update_id'] + 1)  # отключил чтобы не писать каждый раз сообщения
                         chat_id = str(i['message']['from']['id'])
                         text = i['message']['text']
                         # из текста оставить только 19 цифр
-                        print(text)
+                        # print(text)
                         if text.lower() in ['exit', 'quit', 'выход', 'закрыть']:
                             exit_bot = True
                             continue
@@ -211,12 +232,14 @@ def main():
                                 # print(len(text))
                                 # print(text)
                                 continue
-                            if save_doc(text):
-                                otvetit(chat_id, "Скачаны документы по закупке: " + text)
+                            ret = save_doc(text)
+                            if ret:
+                                otvetit(chat_id, "Скачаны документы по закупке: " + text + " НМЦК: " + ret)
                             else:
                                 otvetit(chat_id, "Ошибка загрузки по закупке: " + text)
         except Exception as ex:
-            print(ex)
+            pass
+            # print(ex)
 
         time.sleep(10)
 
